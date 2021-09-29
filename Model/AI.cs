@@ -68,6 +68,7 @@ namespace BlazorConnect4.AIModels
     {
         private double alpha = 0.1;
         private double gamma = 0.9;
+        private double epsilon = 0.5;
         private int episodes = 100;
 
         //private List<QState> states { get; set; }
@@ -93,12 +94,16 @@ namespace BlazorConnect4.AIModels
         public static void TrainAgents()
         {
             /* Calculate the QValue for the current State:
-            double q = QEstimated;
-            double r = GetReward;
-            double maxQ = MaxQ(nextStateName);
+
+            loop states in episodes:
+                loop actions in states:
+
+                    double q = QEstimated;
+                    double r = GetReward;
+                    double maxQ = MaxQ(nextStateName);
              
-            double value = q + alpha * (r + gamma * maxQ - q);
-            QValue = value;
+                    double value = q + alpha * (r + gamma * maxQ - q);
+                    QValue = value;
              */
         }
 
