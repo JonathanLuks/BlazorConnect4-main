@@ -66,8 +66,12 @@ namespace BlazorConnect4.AIModels
     [Serializable]
     public class QAgent : AI
     {
-        private float epsilon;
-        private int repeat;
+        private double alpha = 0.1;
+        private double gamma = 0.9;
+        private int episodes = 100;
+
+        //private List<QState> states { get; set; }
+        private HashSet<string> EndStates { get; set; }
 
         public QAgent()
         {
@@ -88,7 +92,28 @@ namespace BlazorConnect4.AIModels
 
         public static void TrainAgents()
         {
+            /* Calculate the QValue for the current State:
+            double q = QEstimated;
+            double r = GetReward;
+            double maxQ = MaxQ(nextStateName);
+             
+            double value = q + alpha * (r + gamma * maxQ - q);
+            QValue = value;
+             */
+        }
 
+        private static void GetReward()
+        {
+            /*
+             if (won)
+                return 1
+             else if (lost)
+                return -1
+             else if NotValidMove
+                return -0.1
+             else
+                return 0
+             */
         }
 
         public override int SelectMove(Cell[,] grid)
