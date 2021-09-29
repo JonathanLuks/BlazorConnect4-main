@@ -2,6 +2,7 @@
 using System.IO;
 using BlazorConnect4.Model;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace BlazorConnect4.AIModels
 {
@@ -37,7 +38,6 @@ namespace BlazorConnect4.AIModels
     }
 
 
-
     [Serializable]
     public class RandomAI : AI
     {
@@ -59,6 +59,43 @@ namespace BlazorConnect4.AIModels
             // Eftersom generatorn inte var serialiserad.
             temp.generator = new Random();
             return temp;
+        }
+    }
+
+
+    [Serializable]
+    public class QAgent : AI
+    {
+        private float epsilon;
+        private int repeat;
+
+        public QAgent()
+        {
+            
+        }
+
+        public QAgent(int difficulty)
+        {
+            if (difficulty == 1)
+            {
+                // Load Easy-AI file
+                if (File.Exists("Data/Easy-AI"))
+                {
+                    FromFile("Data/Easy-AI");
+                }
+            }
+        }
+
+        public static void TrainAgents()
+        {
+
+        }
+
+        public override int SelectMove(Cell[,] grid)
+        {
+            throw new NotImplementedException();
+
+
         }
     }
 }
