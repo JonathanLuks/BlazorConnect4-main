@@ -93,11 +93,11 @@ namespace BlazorConnect4.Model
             }
             else if (playAgainst == "Q2")
             {
-                ai = new RandomAI();
+                ai = new QAgent(2);
             }
             else if (playAgainst == "Q3")
             {
-                ai = new RandomAI();
+                ai = new QAgent(3);
             }
 
         }

@@ -88,6 +88,22 @@ namespace BlazorConnect4.AIModels
                     FromFile("Data/Easy-AI");
                 }
             }
+            else if (difficulty == 2)
+            {
+                // Load Medium-AI file
+                if (File.Exists("Data/Medium-AI"))
+                {
+                    FromFile("Data/Medium-AI");
+                }
+            }
+            else if (difficulty == 3)
+            {
+                // Load Hard-AI file
+                if (File.Exists("Data/Hard-AI"))
+                {
+                    FromFile("Data/Hard-AI");
+                }
+            }
         }
 
         public static void TrainAgents()
@@ -119,8 +135,6 @@ namespace BlazorConnect4.AIModels
         public override int SelectMove(Cell[,] grid)
         {
             throw new NotImplementedException();
-
-
         }
     }
 }
