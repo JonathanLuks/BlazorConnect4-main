@@ -113,6 +113,7 @@ namespace BlazorConnect4.AIModels
                 while (true)
                 {
                     //startState = 
+                    break;
                 }
             }
 
