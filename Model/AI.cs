@@ -3,6 +3,7 @@ using System.IO;
 using BlazorConnect4.Model;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BlazorConnect4.AIModels
 {
@@ -162,6 +163,12 @@ namespace BlazorConnect4.AIModels
 
             Random random = new Random();
 
+            double[][] qTable = new double[6][];
+            for (int i = 0; i < 6; i++)
+            {
+                qTable[i] = new double[7];
+            }
+
             List<double> newList = new List<double>();
 
             for (int i = 0; i < 7; i++)
@@ -178,8 +185,6 @@ namespace BlazorConnect4.AIModels
             // choose action from e-greedy
             // Temporary:
             int action = 0;
-
-            double saReward = GetReward(grid, action);
             
             if (random.NextDouble() < epsilon)
             {
@@ -187,11 +192,14 @@ namespace BlazorConnect4.AIModels
             }
             else
             {
-                //saReward
+                double saReward = GetReward(grid, action);
+                double nsReward = qTable[action].Max();
+                double qState = saReward + (gamma * nsReward);
+                qTable[0][action] = qState;
             }
-            
-            double nsReward = newArray[action];
-            double qState = saReward + (gamma * nsReward);
+
+
+            //return action;
         }
     }
 }
