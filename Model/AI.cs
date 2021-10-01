@@ -137,15 +137,17 @@ namespace BlazorConnect4.AIModels
             for (int i = 0; i < 7; i++) 
             {
                 if (grid[i, action].Color == CellColor.Blank)
+                {
                     row = i;
                     break;
+                }
             }
 
             if (IsWin(action, row))
                 return 1;
             else if (IsLoss(action,row))
                 return -1;
-            else if (grid[action, 0].Color != CellColor.Blank)
+            else if (board.Grid[action, 0].Color != CellColor.Blank)
                 return -0.1;
             else
                 return 0;
