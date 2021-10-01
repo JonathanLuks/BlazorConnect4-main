@@ -32,7 +32,6 @@ namespace BlazorConnect4.AIModels
                 returnAI = (AI)bformatter.Deserialize(stream);
             }
             return returnAI;
-
         }
 
     }
@@ -70,24 +69,37 @@ namespace BlazorConnect4.AIModels
         private static double gamma = 0.9;
         private static double epsilon = 0.5;
         private static int iterations = 100;
+        private static CellColor color;
+        private static GameBoard board;
 
         //private List<QState> states { get; set; }
         private HashSet<string> EndStates { get; set; }
 
-        public QAgent()
+        public QAgent(GameBoard boardFromEngine, CellColor aiColor)
         {
-            
+            board = boardFromEngine;
+            color = aiColor;
         }
 
-        public QAgent(int difficulty)
+        public QAgent(int difficulty, GameBoard boardFromEngine, CellColor aiColor)
         {
+            board = boardFromEngine;
+            color = aiColor;
+
             if (difficulty == 1)
             {
                 // Load Easy-AI file
-                if (File.Exists("Data/Easy-AI"))
-                {
-                    FromFile("Data/Easy-AI");
-                }
+                FromFile("Data/Easy-AI.bin");
+            }
+            else if (difficulty == 2)
+            {
+                // Load Easy-AI file
+                FromFile("Data/Medium-AI.bin");
+            }
+            else if (difficulty == 3)
+            {
+                // Load Easy-AI file
+                FromFile("Data/Hard-AI.bin");
             }
         }
 
@@ -118,22 +130,179 @@ namespace BlazorConnect4.AIModels
              */
         }
 
-        private static Cell GetReward(int currentState, int action, Cell[,] grid)
+        private static double GetReward(int action, Cell[,] grid)
         {
-            /*
-             if (IsWin(currentState, action))
-                return 1
-             else if (lost)
-                return -1
-             else if NotValidMove
-                return -0.1
-             else
-                return 0
-            */
-            return grid[currentState, action];
+            int row = 0;
+
+            for (int i = 0; i < 7; i++) 
+            {
+                if (grid[i, action].Color == CellColor.Blank)
+                    row = i;
+                    break;
+            }
+
+            if (IsWin(action, row))
+                return 1;
+            else if (IsLoss(action,row))
+                return -1;
+            else if (grid[action, 0].Color != CellColor.Blank)
+                return -0.1;
+            else
+                return 0;
         }
 
-        private int[] GetValidActions(int currentState, Cell[,] grid)
+        private static bool IsWin(int action, int row) 
+        {
+            bool win = false;
+            int score = 0;
+
+            if (row < 3)
+            {
+                for (int i = row; i <= row + 3; i++)
+                {
+                    if (board.Grid[action, i].Color == color)
+                    {
+                        score++;
+                    }
+                }
+                win = score == 4;
+                score = 0;
+            }
+
+            int left = Math.Max(action - 3, 0);
+
+            for (int i = left; i <= action; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    if (i + j <= 6 && board.Grid[i + j, row].Color == color)
+                    {
+                        score++;
+                    }
+                }
+                win = win || score == 4;
+                score = 0;
+            }
+
+            int colpos;
+            int rowpos;
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    colpos = action - i + j;
+                    rowpos = row - i + j;
+                    if (0 <= colpos && colpos <= 6 &&
+                        0 <= rowpos && rowpos < 6 &&
+                        board.Grid[colpos, rowpos].Color == color)
+                    {
+                        score++;
+                    }
+                }
+
+                win = win || score == 4;
+                score = 0;
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    colpos = action + i - j;
+                    rowpos = row - i + j;
+                    if (0 <= colpos && colpos <= 6 &&
+                        0 <= rowpos && rowpos < 6 &&
+                        board.Grid[colpos, rowpos].Color == color)
+                    {
+                        score++;
+                    }
+                }
+
+                win = win || score == 4;
+                score = 0;
+            }
+
+            return win;
+        }
+
+        private static bool IsLoss(int action, int row) 
+        {
+            CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
+            bool win = false;
+            int score = 0;
+
+            if (row < 3)
+            {
+                for (int i = row; i <= row + 3; i++)
+                {
+                    if (board.Grid[action, i].Color == otherPlayer)
+                    {
+                        score++;
+                    }
+                }
+                win = score == 4;
+                score = 0;
+            }
+
+            int left = Math.Max(action - 3, 0);
+
+            for (int i = left; i <= action; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    if (i + j <= 6 && board.Grid[i + j, row].Color == otherPlayer)
+                    {
+                        score++;
+                    }
+                }
+                win = win || score == 4;
+                score = 0;
+            }
+
+            int colpos;
+            int rowpos;
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    colpos = action - i + j;
+                    rowpos = row - i + j;
+                    if (0 <= colpos && colpos <= 6 &&
+                        0 <= rowpos && rowpos < 6 &&
+                        board.Grid[colpos, rowpos].Color == otherPlayer)
+                    {
+                        score++;
+                    }
+                }
+
+                win = win || score == 4;
+                score = 0;
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    colpos = action + i - j;
+                    rowpos = row - i + j;
+                    if (0 <= colpos && colpos <= 6 &&
+                        0 <= rowpos && rowpos < 6 &&
+                        board.Grid[colpos, rowpos].Color == otherPlayer)
+                    {
+                        score++;
+                    }
+                }
+
+                win = win || score == 4;
+                score = 0;
+            }
+
+            return win;
+        }
+
+        private int[] GetValidActions(Cell[,] grid)
         {
             List<int> validActions = new List<int>();
 
@@ -141,19 +310,18 @@ namespace BlazorConnect4.AIModels
 
             for (int i = 0; i < 7; i++)
             {
-                if (grid[currentState, i].Color == CellColor.Blank)
+                if (grid[i, 0].Color == CellColor.Blank)
                 {
                     validActions.Add(i);
                 }
             }
-
 
             return validActions.ToArray();
         }
 
         public bool GoalReached(int currentState)
         {
-            return currentState == 1;
+            return currentState == 1;   
         }
 
         public override int SelectMove(Cell[,] grid)
@@ -161,8 +329,6 @@ namespace BlazorConnect4.AIModels
             throw new NotImplementedException();
 
             //var validActions = GetValidActions(currentState)
-
-
         }
     }
 }
