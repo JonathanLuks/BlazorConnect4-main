@@ -66,9 +66,10 @@ namespace BlazorConnect4.AIModels
     [Serializable]
     public class QAgent : AI
     {
-        private double alpha = 0.1;
-        private double gamma = 0.9;
-        private int episodes = 100;
+        private static double alpha = 0.1;
+        private static double gamma = 0.9;
+        private static double epsilon = 0.5;
+        private static int iterations = 100;
 
         //private List<QState> states { get; set; }
         private HashSet<string> EndStates { get; set; }
@@ -88,40 +89,39 @@ namespace BlazorConnect4.AIModels
                     FromFile("Data/Easy-AI");
                 }
             }
-            else if (difficulty == 2)
-            {
-                // Load Medium-AI file
-                if (File.Exists("Data/Medium-AI"))
-                {
-                    FromFile("Data/Medium-AI");
-                }
-            }
-            else if (difficulty == 3)
-            {
-                // Load Hard-AI file
-                if (File.Exists("Data/Hard-AI"))
-                {
-                    FromFile("Data/Hard-AI");
-                }
-            }
         }
 
         public static void TrainAgents()
         {
+            Random random = new Random();
+
+            for (int i = 0; i < iterations; i++)
+            {
+                int startState = random.Next(6);
+                while (true)
+                {
+                    //startState = 
+                }
+            }
+
             /* Calculate the QValue for the current State:
-            double q = QEstimated;
-            double r = GetReward;
-            double maxQ = MaxQ(nextStateName);
+
+            loop states in episodes:
+                loop actions in states:
+
+                    double q = QEstimated;
+                    double r = GetReward;
+                    double maxQ = MaxQ(nextStateName);
              
-            double value = q + alpha * (r + gamma * maxQ - q);
-            QValue = value;
+                    double value = q + alpha * (r + gamma * maxQ - q);
+                    QValue = value;
              */
         }
 
-        private static void GetReward()
+        private static Cell GetReward(int currentState, int action, Cell[,] grid)
         {
             /*
-             if (won)
+             if (IsWin(currentState, action))
                 return 1
              else if (lost)
                 return -1
@@ -129,12 +129,40 @@ namespace BlazorConnect4.AIModels
                 return -0.1
              else
                 return 0
-             */
+            */
+            return grid[currentState, action];
+        }
+
+        private int[] GetValidActions(int currentState, Cell[,] grid)
+        {
+            List<int> validActions = new List<int>();
+
+            //return Board.Grid[col, 0].Color == CellColor.Blank;
+
+            for (int i = 0; i < 7; i++)
+            {
+                if (grid[currentState, i].Color == CellColor.Blank)
+                {
+                    validActions.Add(i);
+                }
+            }
+
+
+            return validActions.ToArray();
+        }
+
+        public bool GoalReached(int currentState)
+        {
+            return currentState == 1;
         }
 
         public override int SelectMove(Cell[,] grid)
         {
             throw new NotImplementedException();
+
+            //var validActions = GetValidActions(currentState)
+
+
         }
     }
 }
