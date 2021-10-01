@@ -72,7 +72,9 @@ namespace BlazorConnect4.AIModels
         private static int iterations = 100;
 
         //private List<QState> states { get; set; }
-        private HashSet<string> EndStates { get; set; }
+        //private HashSet<string> EndStates { get; set; }
+
+        private int State { get; set; }
 
         public QAgent()
         {
@@ -97,7 +99,7 @@ namespace BlazorConnect4.AIModels
 
             for (int i = 0; i < iterations; i++)
             {
-                int startState = random.Next(6);
+                int startState = random.Next(7);
                 while (true)
                 {
                     //startState = 
@@ -118,22 +120,21 @@ namespace BlazorConnect4.AIModels
              */
         }
 
-        private static Cell GetReward(int currentState, int action, Cell[,] grid)
+        private static double GetReward(Cell[,] grid, int action)
         {
-            /*
-             if (IsWin(currentState, action))
-                return 1
-             else if (lost)
-                return -1
-             else if NotValidMove
-                return -0.1
-             else
-                return 0
-            */
-            return grid[currentState, action];
+            GameEngine GE = new GameEngine();
+
+            if (GE.IsWin(action, 0))
+                return 1;
+            else if (!GE.IsWin(action, 0))
+                return -1;
+            else if (!(grid[action, 0].Color == CellColor.Blank))
+                return -0.1;
+            else
+                return 0;
         }
 
-        private int[] GetValidActions(int currentState, Cell[,] grid)
+        private int[] GetValidActions(Cell[,] grid)
         {
             List<int> validActions = new List<int>();
 
@@ -141,12 +142,11 @@ namespace BlazorConnect4.AIModels
 
             for (int i = 0; i < 7; i++)
             {
-                if (grid[currentState, i].Color == CellColor.Blank)
+                if (grid[i, 0].Color == CellColor.Blank)
                 {
                     validActions.Add(i);
                 }
             }
-
 
             return validActions.ToArray();
         }
@@ -160,9 +160,38 @@ namespace BlazorConnect4.AIModels
         {
             throw new NotImplementedException();
 
-            //var validActions = GetValidActions(currentState)
+            Random random = new Random();
 
+            List<double> newList = new List<double>();
 
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    newList.Add(grid[i, j].GetHashCode());
+                }
+            }
+
+            double[] newArray = newList.ToArray();
+
+            var validActions = GetValidActions(grid);
+            // choose action from e-greedy
+            // Temporary:
+            int action = 0;
+
+            double saReward = GetReward(grid, action);
+            
+            if (random.NextDouble() < epsilon)
+            {
+                action = random.Next(7);
+            }
+            else
+            {
+                //saReward
+            }
+            
+            double nsReward = newArray[action];
+            double qState = saReward + (gamma * nsReward);
         }
     }
 }
