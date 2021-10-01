@@ -66,10 +66,10 @@ namespace BlazorConnect4.AIModels
     [Serializable]
     public class QAgent : AI
     {
-        private double alpha = 0.1;
-        private double gamma = 0.9;
-        private double epsilon = 0.5;
-        private int iterations = 100;
+        private static double alpha = 0.1;
+        private static double gamma = 0.9;
+        private static double epsilon = 0.5;
+        private static int iterations = 100;
 
         //private List<QState> states { get; set; }
         private HashSet<string> EndStates { get; set; }
@@ -93,6 +93,17 @@ namespace BlazorConnect4.AIModels
 
         public static void TrainAgents()
         {
+            Random random = new Random();
+
+            for (int i = 0; i < iterations; i++)
+            {
+                int startState = random.Next(6);
+                while (true)
+                {
+                    //startState = 
+                }
+            }
+
             /* Calculate the QValue for the current State:
 
             loop states in episodes:
@@ -149,8 +160,9 @@ namespace BlazorConnect4.AIModels
         {
             throw new NotImplementedException();
 
-            
-            
+            //var validActions = GetValidActions(currentState)
+
+
         }
     }
 }
