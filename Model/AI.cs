@@ -69,7 +69,7 @@ namespace BlazorConnect4.AIModels
         private double alpha = 0.1;
         private double gamma = 0.9;
         private double epsilon = 0.5;
-        private int episodes = 100;
+        private int iterations = 100;
 
         //private List<QState> states { get; set; }
         private HashSet<string> EndStates { get; set; }
@@ -107,10 +107,10 @@ namespace BlazorConnect4.AIModels
              */
         }
 
-        private static void GetReward()
+        private static Cell GetReward(int currentState, int action, Cell[,] grid)
         {
             /*
-             if (won)
+             if (IsWin(currentState, action))
                 return 1
              else if (lost)
                 return -1
@@ -118,14 +118,39 @@ namespace BlazorConnect4.AIModels
                 return -0.1
              else
                 return 0
-             */
+            */
+            return grid[currentState, action];
+        }
+
+        private int[] GetValidActions(int currentState, Cell[,] grid)
+        {
+            List<int> validActions = new List<int>();
+
+            //return Board.Grid[col, 0].Color == CellColor.Blank;
+
+            for (int i = 0; i < 7; i++)
+            {
+                if (grid[currentState, i].Color == CellColor.Blank)
+                {
+                    validActions.Add(i);
+                }
+            }
+
+
+            return validActions.ToArray();
+        }
+
+        public bool GoalReached(int currentState)
+        {
+            return currentState == 1;
         }
 
         public override int SelectMove(Cell[,] grid)
         {
             throw new NotImplementedException();
 
-
+            
+            
         }
     }
 }
