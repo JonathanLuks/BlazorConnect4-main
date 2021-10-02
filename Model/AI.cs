@@ -232,7 +232,7 @@ namespace BlazorConnect4.AIModels
         private static bool IsLoss(int action, int row) 
         {
             CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
-            bool win = false;
+            bool lose = false;
             int score = 0;
 
             if (row < 3)
@@ -244,7 +244,7 @@ namespace BlazorConnect4.AIModels
                         score++;
                     }
                 }
-                win = score == 4;
+                lose = score == 4;
                 score = 0;
             }
 
@@ -259,7 +259,7 @@ namespace BlazorConnect4.AIModels
                         score++;
                     }
                 }
-                win = win || score == 4;
+                lose = lose || score == 4;
                 score = 0;
             }
 
@@ -280,7 +280,7 @@ namespace BlazorConnect4.AIModels
                     }
                 }
 
-                win = win || score == 4;
+                lose = lose || score == 4;
                 score = 0;
             }
 
@@ -298,11 +298,11 @@ namespace BlazorConnect4.AIModels
                     }
                 }
 
-                win = win || score == 4;
+                lose = lose || score == 4;
                 score = 0;
             }
 
-            return win;
+            return lose;
         }
 
         private int[] GetValidActions(Cell[,] grid)
