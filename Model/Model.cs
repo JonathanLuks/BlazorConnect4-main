@@ -89,7 +89,8 @@ namespace BlazorConnect4.Model
             }
             else if (playAgainst == "Q1")
             {
-                ai = new QAgent(1);
+                ai = new QAgent(Board, Player);
+                
             }
             else if (playAgainst == "Q2")
             {
