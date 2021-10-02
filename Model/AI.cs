@@ -77,7 +77,7 @@ namespace BlazorConnect4.AIModels
         private static GameBoard board;
 
 
-        public QAgent(GameBoard boardFromEngine, CellColor aiColor)
+        public QAgent(String fileName, GameBoard boardFromEngine, CellColor aiColor)
         {
             board = boardFromEngine;
             color = aiColor;
@@ -87,17 +87,35 @@ namespace BlazorConnect4.AIModels
             {
                 qTable[i] = new double[6];
             }
+
+            ToFile(fileName);
         }
 
-        public QAgent(int difficulty)
+        public QAgent(int difficulty, GameBoard boardFromEngine, CellColor aiColor)
         {
+            qTable = new double[7][];
+            for (int i = 0; i < 7; i++)
+            {
+                qTable[i] = new double[6];
+            }
+
+            board = boardFromEngine;
+            color = aiColor;
+
             if (difficulty == 1)
             {
                 // Load Easy-AI file
-                if (File.Exists("Data/Easy-AI"))
-                {
-                    FromFile("Data/Easy-AI");
-                }
+                FromFile("Data/Easy-AI.bin");
+            }
+            else if(difficulty == 2)
+            {
+                // Load Moderate-AI file
+                FromFile("Data/Moderate-AI.bin");
+            }
+            else if (difficulty == 3)
+            {
+                // Load Hard-AI file
+                FromFile("Data/Hard-AI.bin");
             }
         }
 
@@ -184,7 +202,7 @@ namespace BlazorConnect4.AIModels
             // choose action from e-greedy
             // Temporary:
 
-            int action = 0;
+            int action = 3;
 
             
             if (random.NextDouble() < epsilon)

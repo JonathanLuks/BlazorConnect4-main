@@ -89,16 +89,36 @@ namespace BlazorConnect4.Model
             }
             else if (playAgainst == "Q1")
             {
-                ai = new QAgent(Board, Player);
-                
+                if (File.Exists("Data/Easy-AI.bin"))
+                {
+                    ai = new QAgent(1, Board, Player);
+                }
+                else
+                {
+                    ai = new QAgent("Data/Easy-AI.bin", Board, Player);
+                }
             }
             else if (playAgainst == "Q2")
             {
-                ai = new RandomAI();
+                if (File.Exists("Data/Moderate-AI.bin"))
+                {
+                    ai = new QAgent(1, Board, Player);
+                }
+                else
+                {
+                    ai = new QAgent("Data/Moderate-AI.bin", Board, Player);
+                }
             }
             else if (playAgainst == "Q3")
             {
-                ai = new RandomAI();
+                if (File.Exists("Data/Hard-AI.bin"))
+                {
+                    ai = new QAgent(1, Board, Player);
+                }
+                else
+                {
+                    ai = new QAgent("Data/Hard-AI.bin", Board, Player);
+                }
             }
 
         }
