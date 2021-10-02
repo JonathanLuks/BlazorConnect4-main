@@ -71,7 +71,7 @@ namespace BlazorConnect4.AIModels
         private static double alpha = 0.1;
         private static double gamma = 0.9;
         private static double epsilon = 0.0;
-        private static int iterations = 100;
+        private static int iterations = 1000;
         private double[][] qTable;
         private static CellColor color;
         private static GameBoard board;
@@ -87,18 +87,30 @@ namespace BlazorConnect4.AIModels
             {
                 qTable[i] = new double[6];
             }
+
         }
 
-        public QAgent(int difficulty)
+        public QAgent(int difficulty, GameBoard boardFromEngine, CellColor aiColor)
         {
+            board = boardFromEngine;
+            color = aiColor;
+
+            qTable = new double[7][];
+            for (int i = 0; i < 7; i++)
+            {
+                qTable[i] = new double[6];
+            }
+
             if (difficulty == 1)
             {
-                // Load Easy-AI file
-                if (File.Exists("Data/Easy-AI"))
-                {
-                    FromFile("Data/Easy-AI");
-                }
+
             }
+        }
+        public static QAgent ConstructFromFile(string fileName)
+        {
+            QAgent temp = (QAgent)(AI.FromFile(fileName));
+            // Eftersom generatorn inte var serialiserad.
+            return temp;
         }
 
         public void TrainAgents(Cell[,] grid)
@@ -115,7 +127,7 @@ namespace BlazorConnect4.AIModels
                 }
             }
 
-            ToFile("Data/Test-AI");
+            ToFile("Data/Test-AI.bin");
 
             /* Calculate the QValue for the current State:
 
@@ -184,7 +196,7 @@ namespace BlazorConnect4.AIModels
             // choose action from e-greedy
             // Temporary:
 
-            int action = 0;
+            int action = random.Next(7);
 
             
             if (random.NextDouble() < epsilon)
@@ -199,8 +211,6 @@ namespace BlazorConnect4.AIModels
                 double qState = saReward + (gamma * nsReward);
                 Debug.WriteLine("qstate: " + qState);
                 Debug.WriteLine("action: " + action);
-                Debug.WriteLine("saReward: " + saReward);
-                Debug.WriteLine("nsReward: " + nsReward);
                 qTable[action][grid.GetLength(1) - 1] = qState;
             }
 
