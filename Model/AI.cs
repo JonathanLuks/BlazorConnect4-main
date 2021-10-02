@@ -3,6 +3,8 @@ using System.IO;
 using BlazorConnect4.Model;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
 
 namespace BlazorConnect4.AIModels
 {
@@ -32,6 +34,7 @@ namespace BlazorConnect4.AIModels
                 returnAI = (AI)bformatter.Deserialize(stream);
             }
             return returnAI;
+
         }
 
     }
@@ -67,55 +70,52 @@ namespace BlazorConnect4.AIModels
     {
         private static double alpha = 0.1;
         private static double gamma = 0.9;
-        private static double epsilon = 0.5;
+        private static double epsilon = 0.0;
         private static int iterations = 100;
+        private double[][] qTable;
         private static CellColor color;
         private static GameBoard board;
 
-        //private List<QState> states { get; set; }
-        private HashSet<string> EndStates { get; set; }
 
         public QAgent(GameBoard boardFromEngine, CellColor aiColor)
         {
             board = boardFromEngine;
             color = aiColor;
+
+            qTable = new double[7][];
+            for (int i = 0; i < 7; i++)
+            {
+                qTable[i] = new double[6];
+            }
         }
 
-        public QAgent(int difficulty, GameBoard boardFromEngine, CellColor aiColor)
+        public QAgent(int difficulty)
         {
-            board = boardFromEngine;
-            color = aiColor;
-
             if (difficulty == 1)
             {
                 // Load Easy-AI file
-                FromFile("Data/Easy-AI.bin");
-            }
-            else if (difficulty == 2)
-            {
-                // Load Easy-AI file
-                FromFile("Data/Medium-AI.bin");
-            }
-            else if (difficulty == 3)
-            {
-                // Load Easy-AI file
-                FromFile("Data/Hard-AI.bin");
+                if (File.Exists("Data/Easy-AI"))
+                {
+                    FromFile("Data/Easy-AI");
+                }
             }
         }
 
-        public static void TrainAgents()
+        public void TrainAgents(Cell[,] grid)
         {
-            Random random = new Random();
-
+            int state = 0;
             for (int i = 0; i < iterations; i++)
             {
-                int startState = random.Next(6);
                 while (true)
                 {
-                    //startState = 
-                    break;
+                    state = SelectMove(grid);
+
+                    if (GoalReached(state))
+                        break;
                 }
             }
+
+            ToFile("Data/Test-AI");
 
             /* Calculate the QValue for the current State:
 
@@ -131,13 +131,13 @@ namespace BlazorConnect4.AIModels
              */
         }
 
-        private static double GetReward(int action, Cell[,] grid)
+        private double GetReward(Cell[,] grid, int action)
         {
             int row = 0;
 
-            for (int i = 0; i < 7; i++) 
+            for (int i = 0; i < 6; i++)
             {
-                if (grid[i, action].Color == CellColor.Blank)
+                if (grid[action, i].Color == CellColor.Blank)
                 {
                     row = i;
                     break;
@@ -146,7 +146,7 @@ namespace BlazorConnect4.AIModels
 
             if (IsWin(action, row))
                 return 1;
-            else if (IsLoss(action,row))
+            else if (IsLoss(action, row))
                 return -1;
             else if (board.Grid[action, 0].Color != CellColor.Blank)
                 return -0.1;
@@ -154,7 +154,61 @@ namespace BlazorConnect4.AIModels
                 return 0;
         }
 
-        private static bool IsWin(int action, int row) 
+        private int[] GetValidActions(Cell[,] grid)
+        {
+            List<int> validActions = new List<int>();
+
+            //return Board.Grid[col, 0].Color == CellColor.Blank;
+
+            for (int i = 0; i < 7; i++)
+            {
+                if (grid[i, 0].Color == CellColor.Blank)
+                {
+                    validActions.Add(i);
+                }
+            }
+
+            return validActions.ToArray();
+        }
+
+        public bool GoalReached(int currentState)
+        {
+            return currentState == 1;
+        }
+
+        public override int SelectMove(Cell[,] grid)
+        {
+            Random random = new Random();
+
+            //var validActions = GetValidActions(grid);
+            // choose action from e-greedy
+            // Temporary:
+
+            int action = 0;
+
+            
+            if (random.NextDouble() < epsilon)
+            {
+                while (grid[action, 0].Color != CellColor.Blank)
+                    action = random.Next(7);
+            }
+            else
+            {
+                double saReward = GetReward(grid, action);
+                double nsReward = qTable[action].Max();
+                double qState = saReward + (gamma * nsReward);
+                Debug.WriteLine("qstate: " + qState);
+                Debug.WriteLine("action: " + action);
+                Debug.WriteLine("saReward: " + saReward);
+                Debug.WriteLine("nsReward: " + nsReward);
+                qTable[action][grid.GetLength(1) - 1] = qState;
+            }
+
+
+            return action;
+        }
+
+        private static bool IsWin(int action, int row)
         {
             bool win = false;
             int score = 0;
@@ -229,7 +283,7 @@ namespace BlazorConnect4.AIModels
             return win;
         }
 
-        private static bool IsLoss(int action, int row) 
+        private static bool IsLoss(int action, int row)
         {
             CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
             bool lose = false;
@@ -303,35 +357,6 @@ namespace BlazorConnect4.AIModels
             }
 
             return lose;
-        }
-
-        private int[] GetValidActions(Cell[,] grid)
-        {
-            List<int> validActions = new List<int>();
-
-            //return Board.Grid[col, 0].Color == CellColor.Blank;
-
-            for (int i = 0; i < 7; i++)
-            {
-                if (grid[i, 0].Color == CellColor.Blank)
-                {
-                    validActions.Add(i);
-                }
-            }
-
-            return validActions.ToArray();
-        }
-
-        public bool GoalReached(int currentState)
-        {
-            return currentState == 1;   
-        }
-
-        public override int SelectMove(Cell[,] grid)
-        {
-            throw new NotImplementedException();
-
-            //var validActions = GetValidActions(currentState)
         }
     }
 }
