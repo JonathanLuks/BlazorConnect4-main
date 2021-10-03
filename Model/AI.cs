@@ -198,11 +198,8 @@ namespace BlazorConnect4.AIModels
         {
             Random random = new Random();
 
-            //var validActions = GetValidActions(grid);
-            // choose action from e-greedy
-            // Temporary:
-
-            int action = 3;
+            int[] validActions = GetValidActions(grid);
+            int action = validActions[random.Next() % validActions.Length];
 
             
             if (random.NextDouble() < epsilon)

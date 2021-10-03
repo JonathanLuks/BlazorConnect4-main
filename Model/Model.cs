@@ -84,8 +84,7 @@ namespace BlazorConnect4.Model
                 {
                     ai = new RandomAI();
                     ai.ToFile("Data/Random.bin");
-                }
-                
+                } 
             }
             else if (playAgainst == "Q1")
             {
@@ -102,7 +101,7 @@ namespace BlazorConnect4.Model
             {
                 if (File.Exists("Data/Moderate-AI.bin"))
                 {
-                    ai = new QAgent(1, Board, Player);
+                    ai = new QAgent(2, Board, Player);
                 }
                 else
                 {
@@ -113,7 +112,7 @@ namespace BlazorConnect4.Model
             {
                 if (File.Exists("Data/Hard-AI.bin"))
                 {
-                    ai = new QAgent(1, Board, Player);
+                    ai = new QAgent(3, Board, Player);
                 }
                 else
                 {
