@@ -71,7 +71,7 @@ namespace BlazorConnect4.AIModels
         private static double alpha = 0.1;
         private static double gamma = 0.9;
         private static double epsilon = 0.0;
-        private static int iterations = 1000;
+        private static int iterations = 1;
         private double[][] qTable;
         private static CellColor color;
         private static GameBoard board;
@@ -88,6 +88,13 @@ namespace BlazorConnect4.AIModels
                 qTable[i] = new double[6];
             }
 
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    qTable[j][i] = 0.5;
+                }
+            }
         }
 
         public QAgent(int difficulty, GameBoard boardFromEngine, CellColor aiColor)
@@ -106,6 +113,7 @@ namespace BlazorConnect4.AIModels
 
             }
         }
+
         public static QAgent ConstructFromFile(string fileName)
         {
             QAgent temp = (QAgent)(AI.FromFile(fileName));
@@ -113,16 +121,37 @@ namespace BlazorConnect4.AIModels
             return temp;
         }
 
-        public void TrainAgents(Cell[,] grid)
+        public void TrainAgents(Cell[,] grid, GameEngine ge)
         {
             int state = 0;
             for (int i = 0; i < iterations; i++)
             {
+                Debug.WriteLine("Loop: " + i);
                 while (true)
                 {
+                    Debug.WriteLine("Our Color: " + color);
                     state = SelectMove(grid);
+                    ge.Play(state);
 
-                    if (GoalReached(state))
+                    for (int col = 0; col <= 5; col++)
+                    {
+                        for (int row = 0; row <= 6; row++)
+                        {
+                            Debug.Write("\t" + grid[row, col].Color);
+                        }
+                        Debug.WriteLine("");
+                    }
+
+                    for (int col = 0; col <= 5; col++)
+                    {
+                        for (int row = 0; row <= 6; row++)
+                        {
+                            Debug.Write("\t" + qTable[row][col]);
+                        }
+                        Debug.WriteLine("");
+                    }
+
+                    if (GoalReached(grid, state))
                         break;
                 }
             }
@@ -145,9 +174,10 @@ namespace BlazorConnect4.AIModels
 
         private double GetReward(Cell[,] grid, int action)
         {
+            GameEngine ge = new GameEngine();
             int row = 0;
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 5; i >= 0; i--)
             {
                 if (grid[action, i].Color == CellColor.Blank)
                 {
@@ -156,11 +186,22 @@ namespace BlazorConnect4.AIModels
                 }
             }
 
+
             if (IsWin(action, row))
+            {
+                Debug.WriteLine("WE WOOOOOOOOOOOOOOOOOOOOON POG!!!");
                 return 1;
+            }
             else if (IsLoss(action, row))
+            {
+                Debug.WriteLine("gg u suck NOOB");
                 return -1;
-            else if (board.Grid[action, 0].Color != CellColor.Blank)
+            }
+            else if (ge.IsDraw())
+            {
+                return 2;
+            }
+            else if (grid[action, 0].Color != CellColor.Blank)
                 return -0.1;
             else
                 return 0;
@@ -183,9 +224,16 @@ namespace BlazorConnect4.AIModels
             return validActions.ToArray();
         }
 
-        public bool GoalReached(int currentState)
+        public bool GoalReached(Cell[,] grid, int currentState)
         {
-            return currentState == 1;
+            if (GetReward(grid, currentState) == 1)
+                return true;
+            else if (GetReward(grid, currentState) == -1)
+                return true;
+            else if (GetReward(grid, currentState) == 2)
+                return true;
+            else
+                return false;
         }
 
         public override int SelectMove(Cell[,] grid)
@@ -198,22 +246,25 @@ namespace BlazorConnect4.AIModels
 
             int action = random.Next(7);
 
-            
+            int row = 0;
+
+
             if (random.NextDouble() < epsilon)
             {
                 while (grid[action, 0].Color != CellColor.Blank)
                     action = random.Next(7);
             }
-            else
-            {
-                double saReward = GetReward(grid, action);
-                double nsReward = qTable[action].Max();
-                double qState = saReward + (gamma * nsReward);
-                Debug.WriteLine("qstate: " + qState);
-                Debug.WriteLine("action: " + action);
-                qTable[action][grid.GetLength(1) - 1] = qState;
-            }
+            double saReward = GetReward(grid, action);
+            double nsReward = qTable[action].Max();
+            double qState = saReward + (gamma * nsReward);
+            Debug.WriteLine("\tqstate: " + qState);
+            Debug.WriteLine("\taction: " + action);
+            //Debug.WriteLine("\tsaReward: " + saReward);
+            //Debug.WriteLine("\tnsReward: " + nsReward);
+            qTable[action][row] = qState;
 
+
+            Debug.WriteLine("\tResult: " + (int)Math.Round(qState));
 
             return action;
         }

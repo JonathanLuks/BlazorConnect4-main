@@ -74,6 +74,7 @@ namespace BlazorConnect4.Model
             {
                 ai = null;
             }
+
             else if (playAgainst == "Random")
             {
                 if (File.Exists("Data/Random.bin"))
@@ -87,21 +88,32 @@ namespace BlazorConnect4.Model
                 }
                 
             }
+
             else if (playAgainst == "Q1")
             {
                 var qAgent = new QAgent(Board, Player);
-                qAgent.TrainAgents(Board.Grid);
+                qAgent.TrainAgents(Board.Grid, this);
 
                 ai = QAgent.ConstructFromFile("Data/Test-AI.bin");
                 
             }
+
             else if (playAgainst == "Q2")
             {
                 ai = new RandomAI();
             }
+
             else if (playAgainst == "Q3")
             {
                 ai = new RandomAI();
+            }
+
+            else if (playAgainst == "TRAIN")
+            {
+                var qAgent = new QAgent(Board, Player);
+                qAgent.TrainAgents(Board.Grid, this);
+
+                ai = QAgent.ConstructFromFile("Data/Test-AI.bin");
             }
 
         }
