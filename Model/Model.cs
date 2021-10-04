@@ -125,9 +125,7 @@ namespace BlazorConnect4.Model
             else if(playAgainst == "TRAIN") 
             {
                 var qAgent = new QAgent(this, Player);
-                qAgent.TrainAgents();
-
-                ai = QAgent.ConstructFromFile("Data/Test-AI.bin", this, Player);
+                qAgent.TrainAgents(this.Board.Grid, this);
             }
         }
 
