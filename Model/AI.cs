@@ -68,13 +68,16 @@ namespace BlazorConnect4.AIModels
     [Serializable]
     public class QAgent : AI
     {
-        private static double alpha = 0.1;
+        private static double alpha = 0.5;
         private static double gamma = 0.9;
-        private static double epsilon = 0.0;
-        private static int iterations = 1;
+        private static double epsilon = 0.5;
+        private static int iterations = 10;
         private double[][] qTable;
         private static CellColor color;
         private static GameBoard board;
+        private double saReward;
+        private int state = 0;
+        private int temprow = 0;
 
 
         public QAgent(GameBoard boardFromEngine, CellColor aiColor)
@@ -88,11 +91,13 @@ namespace BlazorConnect4.AIModels
                 qTable[i] = new double[6];
             }
 
+            Random rd = new Random();
+
             for (int i = 0; i < 7; i++)
             {
                 for (int j = 0; j < 6; j++)
                 {
-                    qTable[j][i] = 0.5;
+                    qTable[i][j] = 0;//Math.Round(rd.NextDouble(), 2);
                 }
             }
         }
@@ -123,36 +128,78 @@ namespace BlazorConnect4.AIModels
 
         public void TrainAgents(Cell[,] grid, GameEngine ge)
         {
-            int state = 0;
             for (int i = 0; i < iterations; i++)
             {
-                Debug.WriteLine("Loop: " + i);
+                Console.WriteLine("Loop: " + i);
                 while (true)
                 {
-                    Debug.WriteLine("Our Color: " + color);
+                    Console.WriteLine("Our Color: " + color);
                     state = SelectMove(grid);
-                    ge.Play(state);
+                    bool temp = ge.Play(state);
+                    if (temp)
+                    {
+                        if (ge.message == ge.Player + " Wins" && ge.Player != (color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow))
+                        {
+
+                            saReward = 1;
+                            Console.WriteLine("win pog");
+                            qTable[state][temprow] = saReward;
+                            //int table = qTable.GetHashCode();
+                            
+                            Console.WriteLine("");
+
+                            for (int col = 0; col <= 5; col++)
+                            {
+                                for (int row = 0; row <= 6; row++)
+                                {
+                                    Console.Write("\t" + qTable[row][col]);
+                                }
+                                Console.WriteLine("");
+                            }
+
+                            // return 1
+                        }
+
+                        else
+                        {
+                            saReward = 0;
+                            qTable[state][temprow] = saReward;
+                            // return 0
+                        }
+                        break;
+                    }
+
+                    else if(!temp && ge.active == false)
+                    {
+                        saReward = -1;
+                        qTable[state][temprow] = saReward;
+                        break;
+                        // lose
+                    }
+                    /*
+                    for (int col = 0; col <= 5; col++)
+                    {
+                        for (int row = 0; row <= 6; row++)
+                        {
+                            Console.Write("\t" + grid[row, col].Color);
+                        }
+                        Console.WriteLine("");
+                    }
+
+                    Console.WriteLine("");
 
                     for (int col = 0; col <= 5; col++)
                     {
                         for (int row = 0; row <= 6; row++)
                         {
-                            Debug.Write("\t" + grid[row, col].Color);
+                            Console.Write("\t" + qTable[row][col]);
                         }
-                        Debug.WriteLine("");
+                        Console.WriteLine("");
                     }
-
-                    for (int col = 0; col <= 5; col++)
-                    {
-                        for (int row = 0; row <= 6; row++)
-                        {
-                            Debug.Write("\t" + qTable[row][col]);
-                        }
-                        Debug.WriteLine("");
-                    }
-
+                    */
                     if (GoalReached(grid, state))
                         break;
+
                 }
             }
 
@@ -172,9 +219,9 @@ namespace BlazorConnect4.AIModels
              */
         }
 
-        private double GetReward(Cell[,] grid, int action)
+        private Tuple<double, int> GetReward(Cell[,] grid, int action)
         {
-            GameEngine ge = new GameEngine();
+            //GameEngine ge = new GameEngine();
             int row = 0;
 
             for (int i = 5; i >= 0; i--)
@@ -186,25 +233,28 @@ namespace BlazorConnect4.AIModels
                 }
             }
 
+            return Tuple.Create(qTable[action][row], row);
 
+            /*
             if (IsWin(action, row))
             {
-                Debug.WriteLine("WE WOOOOOOOOOOOOOOOOOOOOON POG!!!");
-                return 1;
+                Console.WriteLine("WE WOOOOOOOOOOOOOOOOOOOOON POG!!!");
+                return Tuple.Create((double)1, row);
             }
             else if (IsLoss(action, row))
             {
-                Debug.WriteLine("gg u suck NOOB");
-                return -1;
+                Console.WriteLine("gg u suck NOOB");
+                return Tuple.Create((double)-1, row);
             }
             else if (ge.IsDraw())
             {
-                return 2;
+                return Tuple.Create((double)2, row);
             }
             else if (grid[action, 0].Color != CellColor.Blank)
-                return -0.1;
+                return Tuple.Create(-0.1, row);
             else
-                return 0;
+                return Tuple.Create((double)0, row);
+            */
         }
 
         private int[] GetValidActions(Cell[,] grid)
@@ -226,11 +276,11 @@ namespace BlazorConnect4.AIModels
 
         public bool GoalReached(Cell[,] grid, int currentState)
         {
-            if (GetReward(grid, currentState) == 1)
+            if (GetReward(grid, currentState).Item1 == 1)
                 return true;
-            else if (GetReward(grid, currentState) == -1)
+            else if (GetReward(grid, currentState).Item1 == -1)
                 return true;
-            else if (GetReward(grid, currentState) == 2)
+            else if (GetReward(grid, currentState).Item1 == 2)
                 return true;
             else
                 return false;
@@ -246,26 +296,40 @@ namespace BlazorConnect4.AIModels
 
             int action = random.Next(7);
 
-            int row = 0;
-
-
             if (random.NextDouble() < epsilon)
             {
                 while (grid[action, 0].Color != CellColor.Blank)
                     action = random.Next(7);
             }
-            double saReward = GetReward(grid, action);
-            double nsReward = qTable[action].Max();
-            double qState = saReward + (gamma * nsReward);
-            Debug.WriteLine("\tqstate: " + qState);
-            Debug.WriteLine("\taction: " + action);
-            //Debug.WriteLine("\tsaReward: " + saReward);
-            //Debug.WriteLine("\tnsReward: " + nsReward);
-            qTable[action][row] = qState;
+
+            else
+            {
+                var getTuple = GetReward(grid, action);
+                saReward = getTuple.Item1; // Reward if a goal is reached
+                int row = getTuple.Item2;
+                temprow = row;
+
+                double nsReward = qTable[action].Max(); // Next action's best reward
+                double q = qTable[action][row]; // Current reward
 
 
-            Debug.WriteLine("\tResult: " + (int)Math.Round(qState));
+                double qValue = saReward + (gamma * nsReward);
 
+                //double qValue = q + alpha * (saReward + gamma * nsReward - q); // Q-Learning
+                //double value = q + alpha * (r + gamma * maxQ - q);
+
+
+                Console.WriteLine("\tsaReward: " + saReward);
+                //Debug.WriteLine("\tnsReward: " + nsReward);
+
+                Console.WriteLine("\trow: " + row);
+                qTable[action][row] = Math.Round(qValue, 2);
+
+                Console.WriteLine("\tqValue: " + qValue);
+                Console.WriteLine("\tResult: " + (int)Math.Round(qValue, 2));
+            }
+
+            Console.WriteLine("\taction: " + action);
             return action;
         }
 

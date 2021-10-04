@@ -113,7 +113,7 @@ namespace BlazorConnect4.Model
                 var qAgent = new QAgent(Board, Player);
                 qAgent.TrainAgents(Board.Grid, this);
 
-                ai = QAgent.ConstructFromFile("Data/Test-AI.bin");
+                //ai = QAgent.ConstructFromFile("Data/Test-AI.bin");
             }
 
         }
