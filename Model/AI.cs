@@ -75,11 +75,6 @@ namespace BlazorConnect4.AIModels
 
         private double[][] qTable;
 
-        public HashSet<string> EndStates;
-        public Dictionary<string, QState> DictStates;
-        public List<QState> States;
-
-
         private static CellColor color;
         private static GameBoard board;
 
@@ -93,10 +88,6 @@ namespace BlazorConnect4.AIModels
         {
             board = boardFromEngine;
             color = aiColor;
-
-            EndStates = new HashSet<string>();
-            DictStates = new Dictionary<string, QState>();
-            States = new List<QState>();
 
             qTable = new double[7][];
             for (int i = 0; i < 7; i++)
