@@ -73,7 +73,7 @@ namespace BlazorConnect4.AIModels
         private double[][] qTable;
         private static CellColor color;
         private static GameEngine ge;
-
+        private Cell[,] lastState;
 
         public QAgent(GameEngine gameEngine, CellColor aiColor)
         {
@@ -216,7 +216,6 @@ namespace BlazorConnect4.AIModels
                 qTable[action][grid.GetLength(1) - 1] = qState;
             }
 
-
             return action;
         }
 
@@ -294,6 +293,13 @@ namespace BlazorConnect4.AIModels
             }
 
             return lose;
+        }
+
+        private static int checkLastMove() 
+        {
+            CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
+
+            return 1;
         }
     }
 }
