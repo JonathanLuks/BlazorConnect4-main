@@ -73,7 +73,7 @@ namespace BlazorConnect4.AIModels
         private double[][] qTable;
         private static CellColor color;
         private static GameEngine ge;
-        private Cell[,] lastState;
+        private int state = 0;
 
         public QAgent(GameEngine gameEngine, CellColor aiColor)
         {
@@ -104,7 +104,10 @@ namespace BlazorConnect4.AIModels
                 while (true)
                 {
                     state = SelectMove(ge.Board.Grid);
-                    ge.Play(state);
+                    if (ge.Play(state))
+                    { 
+                        break;
+                    }
 
                     for (int col = 0; col <= 5; col++)
                     {
@@ -160,10 +163,10 @@ namespace BlazorConnect4.AIModels
 
             if (ge.IsWin(action, row))
                 return 1;
-            else if (IsLoss(action, row))
-                return -1;
-            else if (ge.Board.Grid[action, 0].Color != CellColor.Blank)
-                return -0.1;
+            /*else if (IsLoss(action, row))
+                return -1;*/
+            else if (ge.Board.Grid[action, 0].Color == CellColor.Blank)
+                return 0;
             else
                 return 0;
         }
@@ -217,89 +220,6 @@ namespace BlazorConnect4.AIModels
             }
 
             return action;
-        }
-
-        private static bool IsLoss(int action, int row)
-        {
-            CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
-            bool lose = false;
-            int score = 0;
-
-            if (row < 3)
-            {
-                for (int i = row; i <= row + 3; i++)
-                {
-                    if (ge.Board.Grid[action, i].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-                lose = score == 4;
-                score = 0;
-            }
-
-            int left = Math.Max(action - 3, 0);
-
-            for (int i = left; i <= action; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    if (i + j <= 6 && ge.Board.Grid[i + j, row].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-                lose = lose || score == 4;
-                score = 0;
-            }
-
-            int colpos;
-            int rowpos;
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action - i + j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        ge.Board.Grid[colpos, rowpos].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-
-                lose = lose || score == 4;
-                score = 0;
-            }
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action + i - j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        ge.Board.Grid[colpos, rowpos].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-
-                lose = lose || score == 4;
-                score = 0;
-            }
-
-            return lose;
-        }
-
-        private static int checkLastMove() 
-        {
-            CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
-
-            return 1;
         }
     }
 }
