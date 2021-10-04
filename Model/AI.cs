@@ -34,7 +34,6 @@ namespace BlazorConnect4.AIModels
                 returnAI = (AI)bformatter.Deserialize(stream);
             }
             return returnAI;
-
         }
 
     }
@@ -71,13 +70,12 @@ namespace BlazorConnect4.AIModels
         private static double alpha = 0.1;
         private static double gamma = 0.9;
         private static double epsilon = 0.0;
-        private static int iterations = 100;
         private double[][] qTable;
         private static CellColor color;
         private static GameBoard board;
 
 
-        public QAgent(String fileName, GameBoard boardFromEngine, CellColor aiColor)
+        public QAgent(GameBoard boardFromEngine, CellColor aiColor)
         {
             board = boardFromEngine;
             color = aiColor;
@@ -87,53 +85,51 @@ namespace BlazorConnect4.AIModels
             {
                 qTable[i] = new double[6];
             }
-
-            ToFile(fileName);
         }
 
-        public QAgent(int difficulty, GameBoard boardFromEngine, CellColor aiColor)
+        public static QAgent ConstructFromFile(string FilePath, GameBoard boardFromEngine, CellColor aiColor)
         {
-            qTable = new double[7][];
-            for (int i = 0; i < 7; i++)
-            {
-                qTable[i] = new double[6];
-            }
-
             board = boardFromEngine;
             color = aiColor;
-
-            if (difficulty == 1)
-            {
-                // Load Easy-AI file
-                FromFile("Data/Easy-AI.bin");
-            }
-            else if(difficulty == 2)
-            {
-                // Load Moderate-AI file
-                FromFile("Data/Moderate-AI.bin");
-            }
-            else if (difficulty == 3)
-            {
-                // Load Hard-AI file
-                FromFile("Data/Hard-AI.bin");
-            }
+            
+            return (QAgent)FromFile(FilePath);
         }
 
         public void TrainAgents(Cell[,] grid)
         {
             int state = 0;
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < 100; i++)
             {
+                Debug.WriteLine("Loop: " + i);
                 while (true)
                 {
                     state = SelectMove(grid);
+                    ge.Play(state);
 
-                    if (GoalReached(state))
+                    for (int col = 0; col <= 5; col++)
+                    {
+                        for (int row = 0; row <= 6; row++)
+                        {
+                            Debug.Write("\t" + grid[row, col].Color);
+                        }
+                        Debug.WriteLine("");
+                    }
+
+                    for (int col = 0; col <= 5; col++)
+                    {
+                        for (int row = 0; row <= 6; row++)
+                        {
+                            Debug.Write("\t" + qTable[row][col]);
+                        }
+                        Debug.WriteLine("");
+                    }
+
+                    if (GoalReached(grid, state))
                         break;
                 }
             }
 
-            ToFile("Data/Test-AI");
+            ToFile("Data/Test-AI.bin");
 
             /* Calculate the QValue for the current State:
 
@@ -153,7 +149,7 @@ namespace BlazorConnect4.AIModels
         {
             int row = 0;
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 5; i >= 0; i--)
             {
                 if (grid[action, i].Color == CellColor.Blank)
                 {
