@@ -69,13 +69,16 @@ namespace BlazorConnect4.AIModels
     {
         private static double alpha = 0.5;
         private static double gamma = 0.9;
-        private static double epsilon = 0.5;
-        private static int iterations = 100000;
+        private static double epsilon = 0.1;
+        private static int iterations = 20000;
         private static GameEngine ge;
         private double saReward;
         private int action = 0;
         private string state;
         private Dictionary<string, double[]> states = new Dictionary<string, double[]>();
+        private int wins = 0;
+        private int loses = 0;
+        private int draws = 0;
 
         public QAgent(GameEngine gameEngine)
         {
@@ -103,6 +106,7 @@ namespace BlazorConnect4.AIModels
                     else 
                     {
                         Random random = new Random();
+                        action = random.Next(7);
                         while (ge.Board.Grid[action, 0].Color != CellColor.Blank)
                             action = random.Next(7);
                     }
@@ -130,16 +134,19 @@ namespace BlazorConnect4.AIModels
                         {
                             //Console.WriteLine("Win");
                             saReward = 1;
+                            wins++;
                         }
                         else if (ge.message == ge.Player + " Wins" && ge.Player == CellColor.Yellow)
                         {
-                            Console.WriteLine("Lose");
+                            //Console.WriteLine("Lose");
                             saReward = -1;
+                            loses++;
                         }
                         else
                         {
-                            Console.WriteLine("Draw");
+                            //Console.WriteLine("Draw");
                             saReward = -0.1;
+                            draws++;
                         }
                         break;
                     }
@@ -187,6 +194,11 @@ namespace BlazorConnect4.AIModels
                 }
                 //Console.WriteLine("\n");
             }
+            Console.WriteLine(draws);
+            Console.WriteLine("\n");
+            Console.WriteLine(wins);
+            Console.WriteLine("\n");
+            Console.WriteLine(loses);
             ToFile("Data/Test-AI.bin");
         }
 
