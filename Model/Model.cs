@@ -56,7 +56,7 @@ namespace BlazorConnect4.Model
 
         public GameEngine()
         {
-            Reset("Human");
+            Reset("Random");
         }
 
 

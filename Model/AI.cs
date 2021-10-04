@@ -68,17 +68,26 @@ namespace BlazorConnect4.AIModels
     [Serializable]
     public class QAgent : AI
     {
-        private static double alpha = 0.5;
+        private static double alpha = 1.0;
         private static double gamma = 0.9;
-        private static double epsilon = 0.5;
-        private static int iterations = 10;
+        private static double epsilon = 1.0;
+        private static int iterations = 100;
+        
         private double[][] qTable;
+
+        public HashSet<String> EndStates { get; private set; }
+        public List<QState> States { get; private set; }
+        public Dictionary<string, QState> StateLookup { get; private set; }
+
+
         private static CellColor color;
         private static GameBoard board;
-        private double saReward;
+        
+        private double saReward = 0;
         private int state = 0;
         private int temprow = 0;
-
+        double qValue = 0;
+        int action = 0;
 
         public QAgent(GameBoard boardFromEngine, CellColor aiColor)
         {
@@ -97,7 +106,7 @@ namespace BlazorConnect4.AIModels
             {
                 for (int j = 0; j < 6; j++)
                 {
-                    qTable[i][j] = 0;//Math.Round(rd.NextDouble(), 2);
+                    qTable[i][j] = 0;
                 }
             }
         }
@@ -145,17 +154,6 @@ namespace BlazorConnect4.AIModels
                             Console.WriteLine("win pog");
                             qTable[state][temprow] = saReward;
                             //int table = qTable.GetHashCode();
-                            
-                            Console.WriteLine("");
-
-                            for (int col = 0; col <= 5; col++)
-                            {
-                                for (int row = 0; row <= 6; row++)
-                                {
-                                    Console.Write("\t" + qTable[row][col]);
-                                }
-                                Console.WriteLine("");
-                            }
 
                             // return 1
                         }
@@ -164,8 +162,12 @@ namespace BlazorConnect4.AIModels
                         {
                             saReward = 0;
                             qTable[state][temprow] = saReward;
+
+                            Console.WriteLine("DRAW!!!");
+
                             // return 0
                         }
+
                         break;
                     }
 
@@ -173,50 +175,27 @@ namespace BlazorConnect4.AIModels
                     {
                         saReward = -1;
                         qTable[state][temprow] = saReward;
+
+                        Console.WriteLine("Lose :(");
+
                         break;
                         // lose
                     }
-                    /*
-                    for (int col = 0; col <= 5; col++)
-                    {
-                        for (int row = 0; row <= 6; row++)
-                        {
-                            Console.Write("\t" + grid[row, col].Color);
-                        }
-                        Console.WriteLine("");
-                    }
 
+                }
+
+                Console.WriteLine("");
+                for (int col = 0; col <= 5; col++)
+                {
+                    for (int row = 0; row <= 6; row++)
+                    {
+                        Console.Write("\t" + qTable[row][col]);
+                    }
                     Console.WriteLine("");
-
-                    for (int col = 0; col <= 5; col++)
-                    {
-                        for (int row = 0; row <= 6; row++)
-                        {
-                            Console.Write("\t" + qTable[row][col]);
-                        }
-                        Console.WriteLine("");
-                    }
-                    */
-                    if (GoalReached(grid, state))
-                        break;
-
                 }
             }
 
             ToFile("Data/Test-AI.bin");
-
-            /* Calculate the QValue for the current State:
-
-            loop states in episodes:
-                loop actions in states:
-
-                    double q = QEstimated;
-                    double r = GetReward;
-                    double maxQ = MaxQ(nextStateName);
-             
-                    double value = q + alpha * (r + gamma * maxQ - q);
-                    QValue = value;
-             */
         }
 
         private Tuple<double, int> GetReward(Cell[,] grid, int action)
@@ -234,56 +213,6 @@ namespace BlazorConnect4.AIModels
             }
 
             return Tuple.Create(qTable[action][row], row);
-
-            /*
-            if (IsWin(action, row))
-            {
-                Console.WriteLine("WE WOOOOOOOOOOOOOOOOOOOOON POG!!!");
-                return Tuple.Create((double)1, row);
-            }
-            else if (IsLoss(action, row))
-            {
-                Console.WriteLine("gg u suck NOOB");
-                return Tuple.Create((double)-1, row);
-            }
-            else if (ge.IsDraw())
-            {
-                return Tuple.Create((double)2, row);
-            }
-            else if (grid[action, 0].Color != CellColor.Blank)
-                return Tuple.Create(-0.1, row);
-            else
-                return Tuple.Create((double)0, row);
-            */
-        }
-
-        private int[] GetValidActions(Cell[,] grid)
-        {
-            List<int> validActions = new List<int>();
-
-            //return Board.Grid[col, 0].Color == CellColor.Blank;
-
-            for (int i = 0; i < 7; i++)
-            {
-                if (grid[i, 0].Color == CellColor.Blank)
-                {
-                    validActions.Add(i);
-                }
-            }
-
-            return validActions.ToArray();
-        }
-
-        public bool GoalReached(Cell[,] grid, int currentState)
-        {
-            if (GetReward(grid, currentState).Item1 == 1)
-                return true;
-            else if (GetReward(grid, currentState).Item1 == -1)
-                return true;
-            else if (GetReward(grid, currentState).Item1 == 2)
-                return true;
-            else
-                return false;
         }
 
         public override int SelectMove(Cell[,] grid)
@@ -294,8 +223,6 @@ namespace BlazorConnect4.AIModels
             // choose action from e-greedy
             // Temporary:
 
-            int action = random.Next(7);
-
             if (random.NextDouble() < epsilon)
             {
                 while (grid[action, 0].Color != CellColor.Blank)
@@ -304,6 +231,8 @@ namespace BlazorConnect4.AIModels
 
             else
             {
+
+
                 var getTuple = GetReward(grid, action);
                 saReward = getTuple.Item1; // Reward if a goal is reached
                 int row = getTuple.Item2;
@@ -312,10 +241,10 @@ namespace BlazorConnect4.AIModels
                 double nsReward = qTable[action].Max(); // Next action's best reward
                 double q = qTable[action][row]; // Current reward
 
+                
+                //double qValue = saReward + (gamma * nsReward);
 
-                double qValue = saReward + (gamma * nsReward);
-
-                //double qValue = q + alpha * (saReward + gamma * nsReward - q); // Q-Learning
+                qValue = q + alpha * (saReward + gamma * nsReward - q); // Q-Learning
                 //double value = q + alpha * (r + gamma * maxQ - q);
 
 
@@ -327,161 +256,26 @@ namespace BlazorConnect4.AIModels
 
                 Console.WriteLine("\tqValue: " + qValue);
                 Console.WriteLine("\tResult: " + (int)Math.Round(qValue, 2));
+
+                action = qTable[action].ToList().FindIndex(x => x == nsReward);
             }
+
+            epsilon *= 0.9;
 
             Console.WriteLine("\taction: " + action);
             return action;
         }
+    }
 
-        private static bool IsWin(int action, int row)
-        {
-            bool win = false;
-            int score = 0;
+    class QState
+    {
+        public string StateName { get; private set; }
+        public List<QAction> Actions { get; private set; }
 
-            if (row < 3)
-            {
-                for (int i = row; i <= row + 3; i++)
-                {
-                    if (board.Grid[action, i].Color == color)
-                    {
-                        score++;
-                    }
-                }
-                win = score == 4;
-                score = 0;
-            }
+    }
 
-            int left = Math.Max(action - 3, 0);
+    class QAction
+    {
 
-            for (int i = left; i <= action; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    if (i + j <= 6 && board.Grid[i + j, row].Color == color)
-                    {
-                        score++;
-                    }
-                }
-                win = win || score == 4;
-                score = 0;
-            }
-
-            int colpos;
-            int rowpos;
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action - i + j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == color)
-                    {
-                        score++;
-                    }
-                }
-
-                win = win || score == 4;
-                score = 0;
-            }
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action + i - j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == color)
-                    {
-                        score++;
-                    }
-                }
-
-                win = win || score == 4;
-                score = 0;
-            }
-
-            return win;
-        }
-
-        private static bool IsLoss(int action, int row)
-        {
-            CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
-            bool lose = false;
-            int score = 0;
-
-            if (row < 3)
-            {
-                for (int i = row; i <= row + 3; i++)
-                {
-                    if (board.Grid[action, i].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-                lose = score == 4;
-                score = 0;
-            }
-
-            int left = Math.Max(action - 3, 0);
-
-            for (int i = left; i <= action; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    if (i + j <= 6 && board.Grid[i + j, row].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-                lose = lose || score == 4;
-                score = 0;
-            }
-
-            int colpos;
-            int rowpos;
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action - i + j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-
-                lose = lose || score == 4;
-                score = 0;
-            }
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action + i - j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == otherPlayer)
-                    {
-                        score++;
-                    }
-                }
-
-                lose = lose || score == 4;
-                score = 0;
-            }
-
-            return lose;
-        }
     }
 }
