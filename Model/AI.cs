@@ -72,12 +72,12 @@ namespace BlazorConnect4.AIModels
         private static double epsilon = 0.0;
         private double[][] qTable;
         private static CellColor color;
-        private static GameBoard board;
+        private static GameEngine ge;
 
 
-        public QAgent(GameBoard boardFromEngine, CellColor aiColor)
+        public QAgent(GameEngine gameEngine, CellColor aiColor)
         {
-            board = boardFromEngine;
+            ge = gameEngine;
             color = aiColor;
 
             qTable = new double[7][];
@@ -87,15 +87,15 @@ namespace BlazorConnect4.AIModels
             }
         }
 
-        public static QAgent ConstructFromFile(string FilePath, GameBoard boardFromEngine, CellColor aiColor)
+        public static QAgent ConstructFromFile(string FilePath, GameEngine gameEngine, CellColor aiColor)
         {
-            board = boardFromEngine;
+            ge = gameEngine;
             color = aiColor;
             
             return (QAgent)FromFile(FilePath);
         }
 
-        public void TrainAgents(Cell[,] grid)
+        public void TrainAgents()
         {
             int state = 0;
             for (int i = 0; i < 100; i++)
@@ -103,14 +103,14 @@ namespace BlazorConnect4.AIModels
                 Debug.WriteLine("Loop: " + i);
                 while (true)
                 {
-                    state = SelectMove(grid);
+                    state = SelectMove(ge.Board.Grid);
                     ge.Play(state);
 
                     for (int col = 0; col <= 5; col++)
                     {
                         for (int row = 0; row <= 6; row++)
                         {
-                            Debug.Write("\t" + grid[row, col].Color);
+                            Debug.Write("\t" + ge.Board.Grid[row, col].Color);
                         }
                         Debug.WriteLine("");
                     }
@@ -124,7 +124,7 @@ namespace BlazorConnect4.AIModels
                         Debug.WriteLine("");
                     }
 
-                    if (GoalReached(grid, state))
+                    if (GoalReached(ge.Board.Grid, state))
                         break;
                 }
             }
@@ -158,11 +158,11 @@ namespace BlazorConnect4.AIModels
                 }
             }
 
-            if (IsWin(action, row))
+            if (ge.IsWin(action, row))
                 return 1;
             else if (IsLoss(action, row))
                 return -1;
-            else if (board.Grid[action, 0].Color != CellColor.Blank)
+            else if (ge.Board.Grid[action, 0].Color != CellColor.Blank)
                 return -0.1;
             else
                 return 0;
@@ -185,8 +185,9 @@ namespace BlazorConnect4.AIModels
             return validActions.ToArray();
         }
 
-        public bool GoalReached(int currentState)
+        public bool GoalReached(Cell[,] grid, int currentState)
         {
+            GetReward(grid, currentState);
             return currentState == 1;
         }
 
@@ -219,81 +220,6 @@ namespace BlazorConnect4.AIModels
             return action;
         }
 
-        private static bool IsWin(int action, int row)
-        {
-            bool win = false;
-            int score = 0;
-
-            if (row < 3)
-            {
-                for (int i = row; i <= row + 3; i++)
-                {
-                    if (board.Grid[action, i].Color == color)
-                    {
-                        score++;
-                    }
-                }
-                win = score == 4;
-                score = 0;
-            }
-
-            int left = Math.Max(action - 3, 0);
-
-            for (int i = left; i <= action; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    if (i + j <= 6 && board.Grid[i + j, row].Color == color)
-                    {
-                        score++;
-                    }
-                }
-                win = win || score == 4;
-                score = 0;
-            }
-
-            int colpos;
-            int rowpos;
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action - i + j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == color)
-                    {
-                        score++;
-                    }
-                }
-
-                win = win || score == 4;
-                score = 0;
-            }
-
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    colpos = action + i - j;
-                    rowpos = row - i + j;
-                    if (0 <= colpos && colpos <= 6 &&
-                        0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == color)
-                    {
-                        score++;
-                    }
-                }
-
-                win = win || score == 4;
-                score = 0;
-            }
-
-            return win;
-        }
-
         private static bool IsLoss(int action, int row)
         {
             CellColor otherPlayer = color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow;
@@ -304,7 +230,7 @@ namespace BlazorConnect4.AIModels
             {
                 for (int i = row; i <= row + 3; i++)
                 {
-                    if (board.Grid[action, i].Color == otherPlayer)
+                    if (ge.Board.Grid[action, i].Color == otherPlayer)
                     {
                         score++;
                     }
@@ -319,7 +245,7 @@ namespace BlazorConnect4.AIModels
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    if (i + j <= 6 && board.Grid[i + j, row].Color == otherPlayer)
+                    if (i + j <= 6 && ge.Board.Grid[i + j, row].Color == otherPlayer)
                     {
                         score++;
                     }
@@ -339,7 +265,7 @@ namespace BlazorConnect4.AIModels
                     rowpos = row - i + j;
                     if (0 <= colpos && colpos <= 6 &&
                         0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == otherPlayer)
+                        ge.Board.Grid[colpos, rowpos].Color == otherPlayer)
                     {
                         score++;
                     }
@@ -357,7 +283,7 @@ namespace BlazorConnect4.AIModels
                     rowpos = row - i + j;
                     if (0 <= colpos && colpos <= 6 &&
                         0 <= rowpos && rowpos < 6 &&
-                        board.Grid[colpos, rowpos].Color == otherPlayer)
+                        ge.Board.Grid[colpos, rowpos].Color == otherPlayer)
                     {
                         score++;
                     }
