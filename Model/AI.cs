@@ -98,9 +98,9 @@ namespace BlazorConnect4.AIModels
         {
             for (int i = 0; i < iterations; i++)
             {
-                //Console.WriteLine("Loop: " + i);
                 while (true)
                 {
+                    //if player is red it is our AI
                     if(ge.Player == CellColor.Red)
                         action = SelectMove(ge.Board.Grid);
                     else 
@@ -111,13 +111,13 @@ namespace BlazorConnect4.AIModels
                             action = random.Next(7);
                     }
 
-                    //Console.WriteLine("Our Color: " + ge.Player);
-                    //Console.WriteLine("Action: " + action);
-
+                    //makes the move
                     bool temp = ge.Play(action);
 
+                    //makes the grid into a string to compare with the dictionary
                     state = Hash(ge.Board.Grid);
 
+                    //if there is no state that is the same it adds the state
                     if (!states.ContainsKey(state))
                     {
                         //initializes new state with values of 0
@@ -125,7 +125,6 @@ namespace BlazorConnect4.AIModels
                         for (int k = 0; k < 7; k++)
                             actionTable[k] = 0;
                         states.Add(state, actionTable);
-                        //Console.WriteLine("lagger in nytt varde!");
                     }
 
                     if (temp)
@@ -183,6 +182,7 @@ namespace BlazorConnect4.AIModels
 
                 double newQ = currentQ + alpha * (r + gamma * (double)maxQ - currentQ);
 
+                //updates the q value
                 states[state][action] = newQ;
 
                 if (i + 1 != iterations)
@@ -194,14 +194,19 @@ namespace BlazorConnect4.AIModels
                 }
                 //Console.WriteLine("\n");
             }
+
+            //only for debugging to make sure it gets better
             Console.WriteLine(draws);
             Console.WriteLine("\n");
             Console.WriteLine(wins);
             Console.WriteLine("\n");
             Console.WriteLine(loses);
+            //saves the ai to a bin file
             ToFile("Data/Test-AI.bin");
         }
 
+
+        //makes the grid into a string
         private string Hash(Cell[,] grid) 
         {
             string hashOfState = String.Empty;
@@ -211,11 +216,13 @@ namespace BlazorConnect4.AIModels
             return hashOfState;
         }
 
+        //our function that uses e-greedy
         public override int SelectMove(Cell[,] grid)
         {
             Random random = new Random();
             int action = 0;
 
+            //for exploration
             if (random.NextDouble() < epsilon)
             {
                 while (grid[action, 0].Color != CellColor.Blank)
@@ -224,6 +231,8 @@ namespace BlazorConnect4.AIModels
             else
             {
                 string state = Hash(ge.Board.Grid);
+
+                //if the state has been saved it can count the best move
                 if (states.ContainsKey(state))
                 {
                     double[] values = states[state];
@@ -242,6 +251,7 @@ namespace BlazorConnect4.AIModels
                 }
                 else
                 {
+                    //if the state dont exist we just makes a random move, this state will be saved
                     action = random.Next(7);
                 }
             }
