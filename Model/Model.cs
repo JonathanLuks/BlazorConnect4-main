@@ -90,11 +90,11 @@ namespace BlazorConnect4.Model
             {
                 if (File.Exists("Data/Easy-AI.bin"))
                 {
-                    ai = QAgent.ConstructFromFile("Data/Easy-AI.bin", this, Player);
+                    ai = QAgent.ConstructFromFile("Data/Easy-AI.bin", this);
                 }
                 else
                 {
-                    ai = new QAgent(this, Player);
+                    ai = new QAgent(this);
                     ai.ToFile("Data/Easy-AI.bin");
                 }
             }
@@ -102,11 +102,11 @@ namespace BlazorConnect4.Model
             {
                 if (File.Exists("Data/Moderate-AI.bin"))
                 {
-                    ai = QAgent.ConstructFromFile("Data/Moderate-AI.bin", this, Player);
+                    ai = QAgent.ConstructFromFile("Data/Moderate-AI.bin", this);
                 }
                 else
                 {
-                    ai = new QAgent(this, Player);
+                    ai = new QAgent(this);
                     ai.ToFile("Data/Moderate-AI.bin");
                 }
             }
@@ -114,18 +114,18 @@ namespace BlazorConnect4.Model
             {
                 if (File.Exists("Data/Hard-AI.bin"))
                 {
-                    ai = QAgent.ConstructFromFile("Data/Hard-AI.bin", this, Player);
+                    ai = QAgent.ConstructFromFile("Data/Hard-AI.bin", this);
                 }
                 else
                 {
-                    ai = new QAgent(this, Player);
+                    ai = new QAgent(this);
                     ai.ToFile("Data/Hard-AI.bin");
                 }
             }
             else if(playAgainst == "TRAIN") 
             {
-                var qAgent = new QAgent(this, Player);
-                qAgent.TrainAgents(this.Board.Grid, this);
+                var qAgent = new QAgent(this);
+                qAgent.TrainAgents(this);
             }
         }
 

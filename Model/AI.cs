@@ -71,93 +71,100 @@ namespace BlazorConnect4.AIModels
         private static double gamma = 0.9;
         private static double epsilon = 0.5;
         private static int iterations = 100000;
-        private double[][] qTable;
-        private static CellColor color;
         private static GameEngine ge;
         private double saReward;
         private int action = 0;
-        //private string state;
+        private string state;
         private Dictionary<string, double[]> states = new Dictionary<string, double[]>();
 
-        public QAgent(GameEngine gameEngine, CellColor aiColor)
+        public QAgent(GameEngine gameEngine)
         {
             ge = gameEngine;
-            color = aiColor;  
         }
 
 
-        public static QAgent ConstructFromFile(string FilePath, GameEngine gameEngine, CellColor aiColor)
+        public static QAgent ConstructFromFile(string FilePath, GameEngine gameEngine)
         {
             ge = gameEngine;
-            color = aiColor;
            
             return (QAgent)FromFile(FilePath);
         }
 
 
-        public void TrainAgents(Cell[,] grid, GameEngine ge)
+        public void TrainAgents(GameEngine ge)
         {
             for (int i = 0; i < iterations; i++)
             {
-                Console.WriteLine("Loop: " + i);
+                //Console.WriteLine("Loop: " + i);
                 while (true)
                 {
-                    Console.WriteLine("Our Color: " + color);
-                    action = SelectMove(grid);
+                    if(ge.Player == CellColor.Red)
+                        action = SelectMove(ge.Board.Grid);
+                    else 
+                    {
+                        Random random = new Random();
+                        while (ge.Board.Grid[action, 0].Color != CellColor.Blank)
+                            action = random.Next(7);
+                    }
+
+                    //Console.WriteLine("Our Color: " + ge.Player);
+                    //Console.WriteLine("Action: " + action);
 
                     bool temp = ge.Play(action);
+
+                    state = Hash(ge.Board.Grid);
+
+                    if (!states.ContainsKey(state))
+                    {
+                        //initializes new state with values of 0
+                        double[] actionTable = new Double[7];
+                        for (int k = 0; k < 7; k++)
+                            actionTable[k] = 0;
+                        states.Add(state, actionTable);
+                        //Console.WriteLine("lagger in nytt varde!");
+                    }
+
                     if (temp)
                     {
-                        if (ge.message == ge.Player + " Wins" && ge.Player != (color == CellColor.Yellow ? CellColor.Red : CellColor.Yellow))
+                        if (ge.message == ge.Player + " Wins" && ge.Player == CellColor.Red)
                         {
+                            //Console.WriteLine("Win");
                             saReward = 1;
+                        }
+                        else if (ge.message == ge.Player + " Wins" && ge.Player == CellColor.Yellow)
+                        {
+                            Console.WriteLine("Lose");
+                            saReward = -1;
                         }
                         else
                         {
-                            saReward = 0;
+                            Console.WriteLine("Draw");
+                            saReward = -0.1;
                         }
                         break;
                     }
-
-                    else if(!temp && ge.active == false)
-                    {
-                        saReward = -1;
-                        break;
-                    }
-                }
-
-                string state = Hash(ge.Board.Grid);
-
-                if (!states.ContainsKey(state))
-                {
-                    //initializes new state with values of 0
-                    double[] actionTable = new Double[7];
-                    for (int k = 0; k < 7; k++)
-                        actionTable[k] = 0;
-                    states.Add(state, actionTable);
                 }
 
                 double[] oldValues = states[state];
                 double maxVal = 0;
-                int indexForMaxVal = 0;
 
-                for (; indexForMaxVal < 7; indexForMaxVal++)
+                for (int k = 0; k < 7; k++)
                 {
-                    if (oldValues[indexForMaxVal] > maxVal)
+                    if (oldValues[k] > maxVal)
                     {
-                        maxVal = oldValues[indexForMaxVal];
-                        break;
+                        maxVal = oldValues[k];
                     }
                 }
+
                 double currentQ = oldValues[action];
                 double r = saReward;
 
                 double? maxQ = null;
+
                 foreach (var nextState in states.Values)
                 {
                     foreach (var result in nextState)
                     {
-                        //Console.WriteLine(result);
                         double val = result;
 
                         if (val > maxQ || !maxQ.HasValue)
@@ -171,9 +178,15 @@ namespace BlazorConnect4.AIModels
 
                 states[state][action] = newQ;
 
-                ge.Board = new GameBoard();
+                if (i + 1 != iterations)
+                {
+                    ge.Board = new GameBoard();
+                    ge.Player = CellColor.Red;
+                    ge.active = true;
+                    ge.message = "Starting new game";
+                }
+                //Console.WriteLine("\n");
             }
-
             ToFile("Data/Test-AI.bin");
         }
 
@@ -189,11 +202,6 @@ namespace BlazorConnect4.AIModels
         public override int SelectMove(Cell[,] grid)
         {
             Random random = new Random();
-
-            //var validActions = GetValidActions(grid);
-            // choose action from e-greedy
-            // Temporary:
-
             int action = 0;
 
             if (random.NextDouble() < epsilon)
@@ -203,28 +211,28 @@ namespace BlazorConnect4.AIModels
             }
             else
             {
-                //TODO
                 string state = Hash(ge.Board.Grid);
                 if (states.ContainsKey(state))
                 {
-                    double[] oldValues = states[state];
-                    double maxVal = 0;
+                    double[] values = states[state];
+                    double maxVal = Double.MinValue; //Min if there is only negative numbers
                     int indexForMaxVal = 0;
 
-                    for (; indexForMaxVal < 7; indexForMaxVal++)
+                    for (int i = 0; i < 7; i++)
                     {
-                        if (oldValues[indexForMaxVal] > maxVal)
+                        if (values[i] > maxVal)
                         {
-                            maxVal = oldValues[indexForMaxVal];
-                            break;
+                            maxVal = values[i];
+                            indexForMaxVal = i;
                         }
                     }
+                    action = indexForMaxVal;
                 }
                 else
+                {
                     action = random.Next(7);
+                }
             }
-
-            Console.WriteLine("\taction: " + action);
             return action;
         }      
     }
