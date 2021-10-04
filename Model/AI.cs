@@ -70,35 +70,21 @@ namespace BlazorConnect4.AIModels
         private static double alpha = 0.5;
         private static double gamma = 0.9;
         private static double epsilon = 0.5;
-        private static int iterations = 100;
+        private static int iterations = 100000;
         private double[][] qTable;
         private static CellColor color;
         private static GameEngine ge;
         private double saReward;
         private int action = 0;
-        private string state;
+        //private string state;
         private Dictionary<string, double[]> states = new Dictionary<string, double[]>();
+
         public QAgent(GameEngine gameEngine, CellColor aiColor)
         {
             ge = gameEngine;
-            color = aiColor;
-
-            qTable = new double[42][];
-            for (int i = 0; i < 42; i++)
-            {
-                qTable[i] = new double[7];
-            }
-            
-            Random rd = new Random();
-
-            for (int i = 0; i < 42; i++)
-            {
-                for (int j = 0; j < 7; j++)
-                {
-                    qTable[i][j] = 0;
-                }
-            }
+            color = aiColor;  
         }
+
 
         public static QAgent ConstructFromFile(string FilePath, GameEngine gameEngine, CellColor aiColor)
         {
@@ -107,6 +93,7 @@ namespace BlazorConnect4.AIModels
            
             return (QAgent)FromFile(FilePath);
         }
+
 
         public void TrainAgents(Cell[,] grid, GameEngine ge)
         {
@@ -125,7 +112,6 @@ namespace BlazorConnect4.AIModels
                         {
                             saReward = 1;
                         }
-
                         else
                         {
                             saReward = 0;
@@ -141,6 +127,84 @@ namespace BlazorConnect4.AIModels
                 }
 
                 string state = Hash(ge.Board.Grid);
+
+                if (!states.ContainsKey(state))
+                {
+                    //initializes new state with values of 0
+                    double[] actionTable = new Double[7];
+                    for (int k = 0; k < 7; k++)
+                        actionTable[k] = 0;
+                    states.Add(state, actionTable);
+                }
+
+                double[] oldValues = states[state];
+                double maxVal = 0;
+                int indexForMaxVal = 0;
+
+                for (; indexForMaxVal < 7; indexForMaxVal++)
+                {
+                    if (oldValues[indexForMaxVal] > maxVal)
+                    {
+                        maxVal = oldValues[indexForMaxVal];
+                        break;
+                    }
+                }
+                double currentQ = oldValues[action];
+                double r = saReward;
+
+                double? maxQ = null;
+                foreach (var nextState in states.Values)
+                {
+                    foreach (var result in nextState)
+                    {
+                        //Console.WriteLine(result);
+                        double val = result;
+
+                        if (val > maxQ || !maxQ.HasValue)
+                        {
+                            maxQ = val;
+                        }
+                    }
+                }
+
+                double newQ = currentQ + alpha * (r + gamma * (double)maxQ - currentQ);
+
+                states[state][action] = newQ;
+
+                ge.Board = new GameBoard();
+            }
+
+            ToFile("Data/Test-AI.bin");
+        }
+
+        private string Hash(Cell[,] grid) 
+        {
+            string hashOfState = String.Empty;
+            for (int col = 0; col <= 6; col++)
+                for (int row = 0; row <= 5; row++)
+                    hashOfState += ((int)grid[col,row].Color + 1);
+            return hashOfState;
+        }
+
+        public override int SelectMove(Cell[,] grid)
+        {
+            Random random = new Random();
+
+            //var validActions = GetValidActions(grid);
+            // choose action from e-greedy
+            // Temporary:
+
+            int action = 0;
+
+            if (random.NextDouble() < epsilon)
+            {
+                while (grid[action, 0].Color != CellColor.Blank)
+                    action = random.Next(7);
+            }
+            else
+            {
+                //TODO
+                string state = Hash(ge.Board.Grid);
                 if (states.ContainsKey(state))
                 {
                     double[] oldValues = states[state];
@@ -155,64 +219,9 @@ namespace BlazorConnect4.AIModels
                             break;
                         }
                     }
-                    double currentQ = oldValues[action];
-                    double r = saReward;
                 }
                 else
-                {
-                    //initializes new state with values of 0
-                    for (int k = 0; i < 7; k++)
-                        states[state][k] = 0;
-                }
-
-                ge.Board = new GameBoard();
-            }
-
-            ToFile("Data/Test-AI.bin");
-        }
-        private string Hash(Cell[,] grid) 
-        {
-            string hashOfState = String.Empty;
-            for (int col = 0; col <= 6; col++)
-                for (int row = 0; row <= 5; row++)
-                    hashOfState += ((int)grid[col,row].Color + 1);
-            return hashOfState;
-        }
-
-        private Tuple<double, int> GetReward(Cell[,] grid, int action)
-        {
-            int row = 0;
-
-            for (int i = 5; i >= 0; i--)
-            {
-                if (grid[action, i].Color == CellColor.Blank)
-                {
-                    row = i;
-                    break;
-                }
-            }
-
-            return Tuple.Create(qTable[state][action], row);
-        }
-
-        public override int SelectMove(Cell[,] grid)
-        {
-            Random random = new Random();
-
-            //var validActions = GetValidActions(grid);
-            // choose action from e-greedy
-            // Temporary:
-
-            int action = random.Next(7);
-
-            if (random.NextDouble() < epsilon)
-            {
-                while (grid[action, 0].Color != CellColor.Blank)
                     action = random.Next(7);
-            }
-            else
-            {
-               //TODO
             }
 
             Console.WriteLine("\taction: " + action);
