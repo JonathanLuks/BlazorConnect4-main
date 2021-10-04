@@ -3,6 +3,8 @@ using System.IO;
 using BlazorConnect4.Model;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
 
 namespace BlazorConnect4.AIModels
 {
@@ -32,7 +34,6 @@ namespace BlazorConnect4.AIModels
                 returnAI = (AI)bformatter.Deserialize(stream);
             }
             return returnAI;
-
         }
 
     }
@@ -66,103 +67,195 @@ namespace BlazorConnect4.AIModels
     [Serializable]
     public class QAgent : AI
     {
-        private static double alpha = 0.1;
+        private static double alpha = 0.5;
         private static double gamma = 0.9;
-        private static double epsilon = 0.5;
-        private static int iterations = 100;
+        private static double epsilon = 0.1;
+        private static int iterations = 20000;
+        private static GameEngine ge;
+        private double saReward;
+        private int action = 0;
+        private string state;
+        private Dictionary<string, double[]> states = new Dictionary<string, double[]>();
+        private int wins = 0;
+        private int loses = 0;
+        private int draws = 0;
 
-        //private List<QState> states { get; set; }
-        private HashSet<string> EndStates { get; set; }
-
-        public QAgent()
+        public QAgent(GameEngine gameEngine)
         {
-            
+            ge = gameEngine;
         }
 
-        public QAgent(int difficulty)
+
+        public static QAgent ConstructFromFile(string FilePath, GameEngine gameEngine)
         {
-            if (difficulty == 1)
-            {
-                // Load Easy-AI file
-                if (File.Exists("Data/Easy-AI"))
-                {
-                    FromFile("Data/Easy-AI");
-                }
-            }
+            ge = gameEngine;
+           
+            return (QAgent)FromFile(FilePath);
         }
 
-        public static void TrainAgents()
-        {
-            Random random = new Random();
 
+        public void TrainAgents(GameEngine ge)
+        {
             for (int i = 0; i < iterations; i++)
             {
-                int startState = random.Next(6);
                 while (true)
                 {
-                    //startState = 
+                    //if player is red it is our AI
+                    if(ge.Player == CellColor.Red)
+                        action = SelectMove(ge.Board.Grid);
+                    else 
+                    {
+                        Random random = new Random();
+                        action = random.Next(7);
+                        while (ge.Board.Grid[action, 0].Color != CellColor.Blank)
+                            action = random.Next(7);
+                    }
+
+                    //makes the move
+                    bool temp = ge.Play(action);
+
+                    //makes the grid into a string to compare with the dictionary
+                    state = Hash(ge.Board.Grid);
+
+                    //if there is no state that is the same it adds the state
+                    if (!states.ContainsKey(state))
+                    {
+                        //initializes new state with values of 0
+                        double[] actionTable = new Double[7];
+                        for (int k = 0; k < 7; k++)
+                            actionTable[k] = 0;
+                        states.Add(state, actionTable);
+                    }
+
+                    if (temp)
+                    {
+                        if (ge.message == ge.Player + " Wins" && ge.Player == CellColor.Red)
+                        {
+                            //Console.WriteLine("Win");
+                            saReward = 1;
+                            wins++;
+                        }
+                        else if (ge.message == ge.Player + " Wins" && ge.Player == CellColor.Yellow)
+                        {
+                            //Console.WriteLine("Lose");
+                            saReward = -1;
+                            loses++;
+                        }
+                        else
+                        {
+                            //Console.WriteLine("Draw");
+                            saReward = -0.1;
+                            draws++;
+                        }
+                        break;
+                    }
                 }
-            }
 
-            /* Calculate the QValue for the current State:
+                double[] oldValues = states[state];
+                double maxVal = 0;
 
-            loop states in episodes:
-                loop actions in states:
-
-                    double q = QEstimated;
-                    double r = GetReward;
-                    double maxQ = MaxQ(nextStateName);
-             
-                    double value = q + alpha * (r + gamma * maxQ - q);
-                    QValue = value;
-             */
-        }
-
-        private static Cell GetReward(int currentState, int action, Cell[,] grid)
-        {
-            /*
-             if (IsWin(currentState, action))
-                return 1
-             else if (lost)
-                return -1
-             else if NotValidMove
-                return -0.1
-             else
-                return 0
-            */
-            return grid[currentState, action];
-        }
-
-        private int[] GetValidActions(int currentState, Cell[,] grid)
-        {
-            List<int> validActions = new List<int>();
-
-            //return Board.Grid[col, 0].Color == CellColor.Blank;
-
-            for (int i = 0; i < 7; i++)
-            {
-                if (grid[currentState, i].Color == CellColor.Blank)
+                for (int k = 0; k < 7; k++)
                 {
-                    validActions.Add(i);
+                    if (oldValues[k] > maxVal)
+                    {
+                        maxVal = oldValues[k];
+                    }
                 }
+
+                double currentQ = oldValues[action];
+                double r = saReward;
+
+                double? maxQ = null;
+
+                foreach (var nextState in states.Values)
+                {
+                    foreach (var result in nextState)
+                    {
+                        double val = result;
+
+                        if (val > maxQ || !maxQ.HasValue)
+                        {
+                            maxQ = val;
+                        }
+                    }
+                }
+
+                double newQ = currentQ + alpha * (r + gamma * (double)maxQ - currentQ);
+
+                //updates the q value
+                states[state][action] = newQ;
+
+                if (i + 1 != iterations)
+                {
+                    ge.Board = new GameBoard();
+                    ge.Player = CellColor.Red;
+                    ge.active = true;
+                    ge.message = "Starting new game";
+                }
+                //Console.WriteLine("\n");
             }
 
-
-            return validActions.ToArray();
+            //only for debugging to make sure it gets better
+            Console.WriteLine(draws);
+            Console.WriteLine("\n");
+            Console.WriteLine(wins);
+            Console.WriteLine("\n");
+            Console.WriteLine(loses);
+            //saves the ai to a bin file
+            ToFile("Data/Test-AI.bin");
         }
 
-        public bool GoalReached(int currentState)
+
+        //makes the grid into a string
+        private string Hash(Cell[,] grid) 
         {
-            return currentState == 1;
+            string hashOfState = String.Empty;
+            for (int col = 0; col <= 6; col++)
+                for (int row = 0; row <= 5; row++)
+                    hashOfState += ((int)grid[col,row].Color + 1);
+            return hashOfState;
         }
 
+        //our function that uses e-greedy
         public override int SelectMove(Cell[,] grid)
         {
-            throw new NotImplementedException();
+            Random random = new Random();
+            int action = 0;
 
-            //var validActions = GetValidActions(currentState)
+            //for exploration
+            if (random.NextDouble() < epsilon)
+            {
+                while (grid[action, 0].Color != CellColor.Blank)
+                    action = random.Next(7);
+            }
+            else
+            {
+                string state = Hash(ge.Board.Grid);
 
+                //if the state has been saved it can count the best move
+                if (states.ContainsKey(state))
+                {
+                    double[] values = states[state];
+                    double maxVal = Double.MinValue; //Min if there is only negative numbers
+                    int indexForMaxVal = 0;
 
-        }
+                    for (int i = 0; i < 7; i++)
+                    {
+                        if (values[i] > maxVal)
+                        {
+                            maxVal = values[i];
+                            indexForMaxVal = i;
+                        }
+                    }
+                    action = indexForMaxVal;
+                }
+                else
+                {
+                    //if the state dont exist we just makes a random move, this state will be saved
+                    action = random.Next(7);
+                }
+            }
+            return action;
+        }      
     }
 }
