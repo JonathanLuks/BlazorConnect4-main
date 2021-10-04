@@ -72,17 +72,17 @@ namespace BlazorConnect4.AIModels
         private static double gamma = 0.9;
         private static double epsilon = 1.0;
         private static int iterations = 100;
-        
+
         private double[][] qTable;
 
-        public HashSet<String> EndStates { get; private set; }
-        public List<QState> States { get; private set; }
-        public Dictionary<string, QState> StateLookup { get; private set; }
+        public HashSet<string> EndStates;
+        public Dictionary<string, QState> DictStates;
+        public List<QState> States;
 
 
         private static CellColor color;
         private static GameBoard board;
-        
+
         private double saReward = 0;
         private int state = 0;
         private int temprow = 0;
@@ -94,20 +94,14 @@ namespace BlazorConnect4.AIModels
             board = boardFromEngine;
             color = aiColor;
 
+            EndStates = new HashSet<string>();
+            DictStates = new Dictionary<string, QState>();
+            States = new List<QState>();
+
             qTable = new double[7][];
             for (int i = 0; i < 7; i++)
             {
-                qTable[i] = new double[6];
-            }
-
-            Random rd = new Random();
-
-            for (int i = 0; i < 7; i++)
-            {
-                for (int j = 0; j < 6; j++)
-                {
-                    qTable[i][j] = 0;
-                }
+                qTable[i] = new double[20];
             }
         }
 
@@ -139,10 +133,8 @@ namespace BlazorConnect4.AIModels
         {
             for (int i = 0; i < iterations; i++)
             {
-                Console.WriteLine("Loop: " + i);
                 while (true)
                 {
-                    Console.WriteLine("Our Color: " + color);
                     state = SelectMove(grid);
                     bool temp = ge.Play(state);
                     if (temp)
@@ -171,7 +163,7 @@ namespace BlazorConnect4.AIModels
                         break;
                     }
 
-                    else if(!temp && ge.active == false)
+                    else if (!temp && ge.active == false)
                     {
                         saReward = -1;
                         qTable[state][temprow] = saReward;
@@ -219,10 +211,7 @@ namespace BlazorConnect4.AIModels
         {
             Random random = new Random();
 
-            //var validActions = GetValidActions(grid);
             // choose action from e-greedy
-            // Temporary:
-
             if (random.NextDouble() < epsilon)
             {
                 while (grid[action, 0].Color != CellColor.Blank)
@@ -231,8 +220,6 @@ namespace BlazorConnect4.AIModels
 
             else
             {
-
-
                 var getTuple = GetReward(grid, action);
                 saReward = getTuple.Item1; // Reward if a goal is reached
                 int row = getTuple.Item2;
@@ -241,7 +228,7 @@ namespace BlazorConnect4.AIModels
                 double nsReward = qTable[action].Max(); // Next action's best reward
                 double q = qTable[action][row]; // Current reward
 
-                
+
                 //double qValue = saReward + (gamma * nsReward);
 
                 qValue = q + alpha * (saReward + gamma * nsReward - q); // Q-Learning
@@ -265,17 +252,5 @@ namespace BlazorConnect4.AIModels
             Console.WriteLine("\taction: " + action);
             return action;
         }
-    }
-
-    class QState
-    {
-        public string StateName { get; private set; }
-        public List<QAction> Actions { get; private set; }
-
-    }
-
-    class QAction
-    {
-
     }
 }
